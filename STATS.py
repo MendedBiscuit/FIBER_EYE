@@ -20,7 +20,7 @@ class Contrast:
         mean, std_dev = cv2.meanStdDev(img)
         rms_contrast = std_dev[0][0]
 
-        return rms_contrast
+        return float(rms_contrast)
 
     def Local_RMS(self):
         img = self.img.astype(float) / 255.0
