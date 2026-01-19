@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-class Methods():
+class Particle_Methods():
     def __init__(self, pth_to_img):
         self.img = cv2.imread(pth_to_img)
 
@@ -39,7 +39,36 @@ class Methods():
         edges = cv2.Canny(self.img, min_val, max_val) 
         
         return edges
-    
+
+    def Sobel_fill(self):
+        # 1. Get Gradient Magnitude
+        gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+        sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3) 
+        gradient_magnitude = cv2.magnitude(sobelx, sobely)
+        gradient_magnitude = cv2.convertScaleAbs(gradient_magnitude)
+
+        # 2. Threshold to get binary edges
+        # Adjust '30' if your woodchips are very faint or edges are noisy
+        _, thresh = cv2.threshold(gradient_magnitude, 30, 255, cv2.THRESH_BINARY)
+
+        # 3. Morphological Closing (Connect the gaps in the Sobel outlines)
+        # We use a larger kernel to bridge gaps between woodchip edges
+        kernel = np.ones((1,1), np.uint8)
+        closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+        # 4. Filter Noise and Fill Holes
+        # We find contours and draw them filled on a blank mask
+        mask = np.zeros_like(gray)
+        contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for cnt in contours:
+            # Noise filtering: Only keep contours larger than X pixels
+            if cv2.contourArea(cnt) > 0: 
+                cv2.drawContours(mask, [cnt], -1, 255, -1) # -1 thickness = FILL
+
+        return mask
+
     def Sobel(self):
         img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
 
@@ -66,7 +95,7 @@ class Methods():
         data = blur.reshape((-1, 3))
         data = np.float32(data)
 
-        K = 3
+        K = 2
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
 
         ret, label, center = cv2.kmeans(data, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
@@ -78,5 +107,59 @@ class Methods():
         return segmented_image
 
     def otsu(self):
+    
+        img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+
+        _, otsu_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
+
+        return otsu_img
+
+
+class Impurity_Methods():
+    def __init__(self, pth_to_img):
+        self.img =  cv2.imread(pth_to_img)
+    
+    def detect_impurities(self, wood_mask, sigma_thresh, mode='YUV'):
+ 
+        if mode.upper() == 'YUV':
+            color_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2YUV)
+            c1, c2, c3 = cv2.split(color_img)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(2,2))
+
+            c1_p = clahe.apply(cv2.bitwise_and(c1, c1, mask=wood_mask))
+            c2_p = clahe.apply(cv2.bitwise_and(c2, c2, mask=wood_mask))
+            c3_p = clahe.apply(cv2.bitwise_and(c3, c3, mask=wood_mask))
+            
+        elif mode.upper() == 'HSV':
+            color_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2HSV)
+            c1, c2, c3 = cv2.split(color_img)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4,4))
+       
+            c1_p = cv2.bitwise_and(c1, c1, mask=wood_mask)
+            c2_p = clahe.apply(cv2.bitwise_and(c2, c2, mask=wood_mask))
+            c3_p = clahe.apply(cv2.bitwise_and(c3, c3, mask=wood_mask))
         
-        return
+        else:
+            raise ValueError("Mode must be 'YUV' or 'HSV'")
+
+        def get_stats(channel):
+            pixels = channel[channel > 0]
+            if len(pixels) == 0: return 0, 0
+            return np.mean(pixels), np.std(pixels)
+
+        m1, s1 = get_stats(c1_p)
+        m2, s2 = get_stats(c2_p)
+        m3, s3 = get_stats(c3_p)
+
+        anom1 = cv2.threshold(cv2.absdiff(c1_p, int(m1)), sigma_thresh * s1, 255, cv2.THRESH_BINARY)[1]
+        anom2 = cv2.threshold(cv2.absdiff(c2_p, int(m2)), sigma_thresh * s2, 255, cv2.THRESH_BINARY)[1]
+        anom3 = cv2.threshold(cv2.absdiff(c3_p, int(m3)), sigma_thresh * s3, 255, cv2.THRESH_BINARY)[1]
+
+        combined = cv2.bitwise_or(anom1, cv2.bitwise_or(anom2, anom3))
+        
+        kernel = np.ones((5,5), np.uint8)
+        combined = cv2.morphologyEx(combined, cv2.MORPH_OPEN, kernel)
+        
+        impurity_mask = cv2.bitwise_and(combined, combined, mask=wood_mask)
+        
+        return impurity_mask
