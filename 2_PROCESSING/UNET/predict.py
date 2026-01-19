@@ -15,23 +15,26 @@ CHECKPOINT = "lightning_logs/version_5/checkpoints/model.ckpt"
 DATA = "./test/"
 MASK = "./test_mask"
 OUTPUT = "./3_POSTPROCESSING/OUT_UNET"
-NUM_PREDS = 2 # Specify number of output images
+NUM_PREDS = 2  # Specify number of output images
 
-PREDICT_TRANSFORM = A.Compose([
-    A.Resize(544, 544),
-    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-    ToTensorV2(),
-])
+PREDICT_TRANSFORM = A.Compose(
+    [
+        A.Resize(544, 544),
+        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+        ToTensorV2(),
+    ]
+)
+
 
 def predict_and_visualize(visualise=False, save_img=False):
     """
-    Visualise or save prediction images to drive 
+    Visualise or save prediction images to drive
 
     -- Parameters --
     visualise: bool, set to True for visualisation
     save_img: bool, set to True for output
     -- Returns --
-    None        
+    None
     """
 
     # Load model
@@ -80,24 +83,24 @@ def predict_and_visualize(visualise=False, save_img=False):
 
             plt.tight_layout()
             plt.show()
-    
+
     if save_img:
         # Save prediction to OUTPUT as 544x544px
-        px = 1/plt.rcParams['figure.dpi']
-        fig = plt.figure(figsize=(544*px, 544*px), frameon=False)
+        px = 1 / plt.rcParams["figure.dpi"]
+        fig = plt.figure(figsize=(544 * px, 544 * px), frameon=False)
 
         ax = fig.add_axes([0, 0, 1, 1])
         ax.set_axis_off()
 
         pred_display = pr_masks[idx].squeeze().cpu().numpy()
-        ax.imshow(pred_display, cmap="gray", aspect='auto')
+        ax.imshow(pred_display, cmap="gray", aspect="auto")
 
         plt.savefig(
-            OUTPUT + f"pred{idx+1}.png", 
-            format="png", 
+            OUTPUT + f"pred{idx + 1}.png",
+            format="png",
             bbox_inches=None,
             pad_inches=0,
-            dpi=plt.rcParams['figure.dpi']
+            dpi=plt.rcParams["figure.dpi"],
         )
         plt.close(fig)
 

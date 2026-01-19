@@ -22,7 +22,6 @@ for sample, images in GROUPS:
         # test = image.Laplacian()
         # test = image.k_means()
 
-
         cv2.imshow("a", test)
 
         cv2.waitKey(0)
