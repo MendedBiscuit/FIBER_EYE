@@ -1,9 +1,4 @@
 
-.venv/
-data/
-.ruff_cache/
-
-
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
@@ -16,6 +11,12 @@ __pycache__/
 
 # C extensions
 *.so
+.venv/
+
+1_PREPROCESSING/IN_PREPROCESS
+2_CLASSIC_CV/OUT_PREPROCESS
+3_UNET/TRAINING_ARRAY
+.ruff_cache/
 
 # Distribution / packaging
 .Python
