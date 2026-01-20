@@ -80,11 +80,6 @@ class Preprocessor:
 
         return final_stack
 
-    def save_multimodal_data(self, num, pth_to_out):
-        stack = self.get_stack()
-        out_name = f"{pth_to_out}{num}_multimodal.npz"
-        np.savez_compressed(out_name, data=stack)
-    
     def masks_from_json(self, json_path, output_dir):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -123,7 +118,32 @@ class Preprocessor:
 
             raw_name = os.path.basename(img_info["file_name"])
             sample_num = raw_name.split("-")[-1].split("_")[0]
-            target_name = f"{sample_num}_multimodal.png"
+            target_name = f"{sample_num}_M.png"
 
             cv2.imwrite(os.path.join(output_dir, target_name), mask)
 
+    def tile_and_save(self, stack, mask, sample_num, img_out, mask_out, tile_size=512, stride=256):
+        os.makedirs(img_out, exist_ok=True)
+        os.makedirs(mask_out, exist_ok=True)
+
+        h, w = stack.shape[:2]
+        tile_count = 0
+
+        for y in range(0, h - tile_size + 1, stride):
+            for x in range(0, w - tile_size + 1, stride):
+
+                tile_stack = stack[y:y+tile_size, x:x+tile_size]
+                tile_mask = mask[y:y+tile_size, x:x+tile_size]
+
+                tile_id = f"{sample_num}_y{y}_x{x}"
+                
+                np.savez_compressed(
+                    os.path.join(img_out, f"{tile_id}_multimodal.npz"), 
+                    image=tile_stack
+                )
+                
+                cv2.imwrite(
+                    os.path.join(mask_out, f"{tile_id}_multimodal.png"), 
+                    tile_mask
+                )
+                tile_count += 1

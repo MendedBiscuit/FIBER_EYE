@@ -3,13 +3,16 @@ data_version: 1.0
 
 naming_conventions:
   raw_input:
-    pattern: "{sample_id}_{channel_key}.png"
+    pattern: "{sample_id}_{type or channel_key}.png"
     example: "1_A.png, 1_B.png"
     channel_keys:
       A: Ambient Light
       B: Blue LED
       G: Green LED
       R: Red LED
+    types:
+      M: Mask
+      P: Prediction
 
   preprocessed_output:
     pattern: "{sample_id}_{channel_key}.png"
@@ -32,6 +35,5 @@ tensor_stack_definition:
     12: Local RMS Texture Map (Grayscale derived from Ambient)
 
 preprocessing_logic:
-  normalization: Gaussian Shading Correction (129x129 kernel)
-  enhancement: Contrast Limited Adaptive Histogram Equalization (CLAHE)
-  masking: Binary threshold at 10 to isolate particles from black background
+  normalization: Gaussian light crrection (129x129 kernel)
+  enhancement: CLAHE
