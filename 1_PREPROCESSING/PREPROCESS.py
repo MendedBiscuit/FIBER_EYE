@@ -1,6 +1,8 @@
+import os
 import cv2
 import numpy as np
 
+from pycocotools.coco import COCO
 
 class Preprocessor:
     def __init__(self, A_pth, B_pth, G_pth, R_pth):
@@ -82,3 +84,46 @@ class Preprocessor:
         stack = self.get_stack()
         out_name = f"{pth_to_out}{num}_multimodal.npz"
         np.savez_compressed(out_name, data=stack)
+    
+    def masks_from_json(self, json_path, output_dir):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        coco = COCO(json_path)
+        
+        name_to_viz_id = {
+            "wood_chip": 127,
+            "impurity": 255
+        }
+
+        img_ids = coco.getImgIds()
+
+        for img_id in img_ids:
+            img_info = coco.loadImgs(img_id)[0]
+            mask = np.zeros((img_info["height"], img_info["width"]), dtype=np.uint8)
+
+            cat_lookup = {cat["name"]: cat["id"] for cat in coco.loadCats(coco.getCatIds())}
+
+            for class_name in ["wood_chip", "impurity"]:
+                original_cat_id = cat_lookup.get(class_name)
+                if original_cat_id is None: continue
+                
+                viz_val = name_to_viz_id[class_name]
+                ann_ids = coco.getAnnIds(imgIds=img_id, catIds=[original_cat_id])
+                anns = coco.loadAnns(ann_ids)
+                
+                for ann in anns:
+                    if isinstance(ann["segmentation"], list):
+                        for seg in ann["segmentation"]:
+                            poly = np.array(seg).reshape((-1, 2)).astype(np.int32)
+                            cv2.fillPoly(mask, [poly], viz_val)
+                    else: 
+                        m = coco.annToMask(ann)
+                        mask[m > 0] = viz_val
+
+            raw_name = os.path.basename(img_info["file_name"])
+            sample_num = raw_name.split("-")[-1].split("_")[0]
+            target_name = f"{sample_num}_multimodal.png"
+
+            cv2.imwrite(os.path.join(output_dir, target_name), mask)
+

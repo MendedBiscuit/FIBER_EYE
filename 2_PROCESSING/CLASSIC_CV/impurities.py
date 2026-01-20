@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 from CV_FUNCTIONALITY import Particle_Methods, Impurity_Methods
 
-IN_CV = "./2_PROCESSING/CLASSIC_CV/OUT_PREPROCESS/"
+IN_CV = "./2_PROCESSING/CLASSIC_CV/IN_CV/"
 OUT_CV = "./3_POSTPROCESSING/OUT_CV/"
 
 CV_IMG = sorted([f for f in os.listdir(IN_CV) if f.endswith(".png")])

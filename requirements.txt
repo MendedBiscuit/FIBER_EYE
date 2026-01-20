@@ -1,6 +1,7 @@
 opencv-python
+pycocotools
 torch
 pytorch-lightning
-matplotlib
 numpy
 albumentations
+matplotlib

@@ -16,10 +16,10 @@ from dataset import SpanData
 EPOCHS = 256
 BATCH_SIZE = 32
 
-TRAIN_DATA = "./2_PROCESSING/UNET/TRAINING_ARRAY/"
-TRAIN_MASK = "./2_PROCESSING/_MASKS/TRAIN_MASK/"
-VALID_DATA = "./2_PROCESSING/UNET/VALID_ARRAY/"
-VALID_MASK = "./2_PROCESSING/_MASKS/VALID_MASK/"
+TRAIN_DATA = "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_ARRAY"
+TRAIN_MASK = "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_MASK"
+VALID_DATA = "./2_PROCESSING/UNET/IN_UNET/VALID/VALID_ARRAY"
+VALID_MASK = "./2_PROCESSING/UNET/IN_UNET/VALID/VALID_MASK"
 
 TRAIN_TRANSFORM = A.Compose(
     [
@@ -75,12 +75,12 @@ def main():
     )
 
     # Configure model
-    model = UNet(encoder_name="resnet34", in_channels=12, classes=2, t_max=EPOCHS)
+    model = UNet(encoder_name="resnet34", in_channels=13, classes=2, t_max=EPOCHS)
 
     # mlflow logger
     mlflow.pytorch.autolog(log_models=True)
     mlf_logger = MLFlowLogger(
-        experiment_name="Spunet_Segmentation_Run", tracking_uri="file:./ml-runs"
+        experiment_name="Fiber_Eye", tracking_uri="file:./2_PROCESSING/UNET/ml-runs"
     )
 
     trainer = L.Trainer(

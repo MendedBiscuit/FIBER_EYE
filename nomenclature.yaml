@@ -1,0 +1,37 @@
+project: FIBER_EYE
+data_version: 1.0
+
+naming_conventions:
+  raw_input:
+    pattern: "{sample_id}_{channel_key}.png"
+    example: "1_A.png, 1_B.png"
+    channel_keys:
+      A: Ambient Light
+      B: Blue LED
+      G: Green LED
+      R: Red LED
+
+  preprocessed_output:
+    pattern: "{sample_id}_{channel_key}.png"
+    description: Individual images after intensity normalization and CLAHE.
+    folder: "./data/OUT_PREPROCESS/"
+
+  training_arrays:
+    pattern: "{sample_id}_multimodal.npy"
+    description: 13-D array with all light data.
+    folder: "./data/TRAINING_ARRAY/"
+    format: NumPy Array (Float32)
+    shape: [Height, Width, 13]
+
+tensor_stack_definition:
+  channels:
+    0-2: Ambient (BGR)
+    3-5: Blue Light (BGR)
+    6-8: Green Light (BGR)
+    9-11: Red Light (BGR)
+    12: Local RMS Texture Map (Grayscale derived from Ambient)
+
+preprocessing_logic:
+  normalization: Gaussian Shading Correction (129x129 kernel)
+  enhancement: Contrast Limited Adaptive Histogram Equalization (CLAHE)
+  masking: Binary threshold at 10 to isolate particles from black background
