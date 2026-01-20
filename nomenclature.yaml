@@ -3,7 +3,7 @@ data_version: 1.0
 
 naming_conventions:
   raw_input:
-    pattern: "{sample_id}_{type or channel_key}.png"
+    pattern: "{sample_id}_{type / channel_key}.png"
     example: "1_A.png, 1_B.png"
     channel_keys:
       A: Ambient Light
@@ -17,23 +17,27 @@ naming_conventions:
   preprocessed_output:
     pattern: "{sample_id}_{channel_key}.png"
     description: Individual images after intensity normalization and CLAHE.
-    folder: "./data/OUT_PREPROCESS/"
+    folder: ""
 
   training_arrays:
-    pattern: "{sample_id}_multimodal.npy"
-    description: 13-D array with all light data.
-    folder: "./data/TRAINING_ARRAY/"
+    pattern: "{sample_id}_{x_location}_{y_location}_multimodal.npz"
+    description: 13-D array with all light data, chopped regions.
+    folder: "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_ARRAY"
     format: NumPy Array (Float32)
     shape: [Height, Width, 13]
 
+  masks:
+    pattern: "{sample_id}_{x_location}_{y_location}_multimodal.png"
+    description: Mask for each array, also chopped into regions.
+    folder: "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_MASK"
 tensor_stack_definition:
   channels:
     0-2: Ambient (BGR)
     3-5: Blue Light (BGR)
     6-8: Green Light (BGR)
     9-11: Red Light (BGR)
-    12: Local RMS Texture Map (Grayscale derived from Ambient)
+    12: Local RMS Texture Map
 
 preprocessing_logic:
-  normalization: Gaussian light crrection (129x129 kernel)
+  normalization: Gaussian light correction (129x129 kernel)
   enhancement: CLAHE
