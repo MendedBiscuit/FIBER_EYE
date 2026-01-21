@@ -11,9 +11,9 @@ from model import UNet
 
 # Predict Parameters
 
-CHECKPOINT = "lightning_logs/version_5/checkpoints/model.ckpt"
-DATA = "./test/"
-MASK = "./test_mask"
+CHECKPOINT = ""
+PRED_DATA = ""
+MASK = ""
 OUTPUT = "./3_POSTPROCESSING/OUT_UNET"
 NUM_PREDS = 2  # Specify number of output images
 
@@ -32,7 +32,7 @@ def predict_and_visualize(visualise=False, save_img=False):
 
     -- Parameters --
     visualise: bool, set to True for visualisation
-    save_img: bool, set to True for output
+    save_img: bool, set to True for file output
     -- Returns --
     None
     """
@@ -44,7 +44,7 @@ def predict_and_visualize(visualise=False, save_img=False):
     model.to(device)
 
     # Prepare and Load DATA and MASK
-    test_dataset = SpunetDataset(DATA, MASK, transform=PREDICT_TRANSFORM)
+    test_dataset = SpanDataset(PRED_DATA, MASK, transform=PREDICT_TRANSFORM)
     test_dataloader = DataLoader(test_dataset, batch_size=NUM_PREDS, shuffle=False)
 
     batch = next(iter(test_dataloader))
@@ -96,7 +96,7 @@ def predict_and_visualize(visualise=False, save_img=False):
         ax.imshow(pred_display, cmap="gray", aspect="auto")
 
         plt.savefig(
-            OUTPUT + f"pred{idx + 1}.png",
+            OUTPUT + f"{idx + 1}_P.png",
             format="png",
             bbox_inches=None,
             pad_inches=0,

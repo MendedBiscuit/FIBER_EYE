@@ -1,7 +1,8 @@
+numpy
 opencv-python
 pycocotools
+segmentation-models-pytorch
 torch
 pytorch-lightning
-numpy
 albumentations
 matplotlib

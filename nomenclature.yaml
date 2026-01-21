@@ -15,12 +15,12 @@ naming_conventions:
       P: Prediction
 
   preprocessed_output:
-    pattern: "{sample_id}_{channel_key}.png"
+    pattern: "{sample_id}_{y_location}_{x_location}_{channel_key}.png"
     description: Individual images after intensity normalization and CLAHE.
-    folder: ""
+    folder: "./2_PROCESSING/CLASSIC_CV/IN_CV"
 
   training_arrays:
-    pattern: "{sample_id}_{x_location}_{y_location}_multimodal.npz"
+    pattern: "{sample_id}_{y_location}_{x_location}_multimodal.npz"
     description: 13-D array with all light data, chopped regions.
     folder: "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_ARRAY"
     format: NumPy Array (Float32)

@@ -75,7 +75,7 @@ def main():
     )
 
     # Configure model
-    model = UNet(encoder_name="resnet34", in_channels=13, classes=2, t_max=EPOCHS)
+    model = UNet(encoder_name="resnet34", in_channels=13, classes=1, t_max=EPOCHS)
 
     # mlflow logger
     mlflow.pytorch.autolog(log_models=True)

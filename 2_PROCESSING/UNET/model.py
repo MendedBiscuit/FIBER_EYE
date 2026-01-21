@@ -18,7 +18,7 @@ class UNet(L.LightningModule):
     """
 
     def __init__(
-        self, encoder_name="resnet34", in_channels=13, classes=2, t_max=64, **kwargs
+        self, encoder_name="resnet34", in_channels=13, classes=1, t_max=64, **kwargs
     ):
         super().__init__()
         self.save_hyperparameters()

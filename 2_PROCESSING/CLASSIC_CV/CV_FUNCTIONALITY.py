@@ -61,7 +61,6 @@ class Particle_Methods:
         )
 
         for cnt in contours:
-
             if cv2.contourArea(cnt) > 0:
                 cv2.drawContours(mask, [cnt], -1, 255, -1)
         return mask

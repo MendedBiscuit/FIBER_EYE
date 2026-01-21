@@ -8,8 +8,7 @@ IN_CV = "./2_PROCESSING/CLASSIC_CV/IN_CV/"
 OUT_CV = "./3_POSTPROCESSING/OUT_CV/"
 
 CV_IMG = sorted([f for f in os.listdir(IN_CV) if f.endswith(".png")])
-GROUPS = itertools.groupby(CV_IMG, key=lambda x: x.split("_")[0])
-
+GROUPS = itertools.groupby(CV_IMG, key=lambda x: (x.split("_")[0], x.split("_")[1]))
 
 def ensemble_impurities(masks, threshold=3):
     ensemble_sum = np.sum(masks, axis=0).astype(np.float32)
@@ -21,7 +20,6 @@ def ensemble_impurities(masks, threshold=3):
     final_mask = cv2.morphologyEx(final_mask, cv2.MORPH_OPEN, kernel)
 
     return final_mask, ensemble_sum
-
 
 for sample, images in GROUPS:
     if sample == "1":
