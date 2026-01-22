@@ -6,3 +6,4 @@ torch
 pytorch-lightning
 albumentations
 matplotlib
+mlflow

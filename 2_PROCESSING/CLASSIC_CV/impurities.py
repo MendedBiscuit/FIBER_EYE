@@ -47,7 +47,6 @@ for sample, images in GROUPS:
 
         ensemble_stack = np.array(masks_list)
 
-        final_mask, summy = ensemble_impurities(ensemble_stack, threshold=5)
-        print(summy)
+        final_mask, _ = ensemble_impurities(ensemble_stack, threshold=5)
         cv2.imshow("test", final_mask)
         cv2.waitKey(0)

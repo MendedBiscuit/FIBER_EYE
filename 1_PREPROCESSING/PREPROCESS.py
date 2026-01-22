@@ -92,7 +92,6 @@ class Preprocessor:
         return self.processed_dict
 
     def CV_tile_and_save(self, sample_num, image_out, tile_size=512, stride=256):
-
         for key, img in self.processed_dict.items():
             h, w = img.shape[:2]
             tile_count = 0

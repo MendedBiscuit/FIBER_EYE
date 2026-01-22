@@ -18,7 +18,7 @@ class UNet(L.LightningModule):
     """
 
     def __init__(
-        self, encoder_name="resnet34", in_channels=13, classes=1, t_max=64, **kwargs
+        self, encoder_name="resnet34", in_channels=15, classes=1, t_max=64, **kwargs
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -33,13 +33,11 @@ class UNet(L.LightningModule):
             **kwargs,
         )
 
-        params = smp.encoders.get_preprocessing_params(encoder_name)
-
         self.register_buffer(
-            "std", torch.tensor(params["std"]).view(1, in_channels, 1, 1)
+            "std", torch.full((1, in_channels, 1, 1), 0.5)
         )
         self.register_buffer(
-            "mean", torch.tensor(params["mean"]).view(1, in_channels, 1, 1)
+            "mean", torch.full((1, in_channels, 1, 1), 0.5)
         )
 
         # # Define loss function, currently using Dice + Focal Loss
@@ -49,9 +47,9 @@ class UNet(L.LightningModule):
         # Tversky and Focal loss
         # 1. Setup the Tversky Loss
         self.tversky_loss = smp.losses.TverskyLoss(
-            mode="multiclass", alpha=0.3, beta=0.7, from_logits=True
+            mode="binary", alpha=0.3, beta=0.7, from_logits=True
         )
-        self.focal_loss = smp.losses.FocalLoss(mode="multiclass", alpha=0.25, gamma=2.0)
+        self.focal_loss = smp.losses.FocalLoss(mode="binary", alpha=0.25, gamma=2.0)
 
         # Prepare for training outputs
         self.training_step_outputs = []
@@ -86,7 +84,10 @@ class UNet(L.LightningModule):
             pred_mask.long(), mask.long(), mode="binary"
         )
 
+        step_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+        
         self.log(f"{stage}_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log(f"{stage}_iou_step", step_iou, prog_bar=True, on_step=True, on_epoch=False)
 
         return {"loss": loss, "tp": tp, "fp": fp, "fn": fn, "tn": tn}
 
@@ -103,22 +104,26 @@ class UNet(L.LightningModule):
         return out["loss"]
 
     def shared_epoch_end(self, outputs, stage):
-        tp = torch.cat([x["tp"] for x in outputs])
-        fp = torch.cat([x["fp"] for x in outputs])
-        fn = torch.cat([x["fn"] for x in outputs])
-        tn = torch.cat([x["tn"] for x in outputs])
+            tp = torch.cat([x["tp"] for x in outputs])
+            fp = torch.cat([x["fp"] for x in outputs])
+            fn = torch.cat([x["fn"] for x in outputs])
+            tn = torch.cat([x["tn"] for x in outputs])
 
-        # Using intersection over union metric
-        per_image_iou = smp.metrics.iou_score(
-            tp, fp, fn, tn, reduction="micro-imagewise"
-        )
-        dataset_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+            per_image_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro-imagewise")
+            dataset_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
 
-        metrics = {
-            f"{stage}_per_image_iou": per_image_iou,
-            f"{stage}_dataset_iou": dataset_iou,
-        }
-        self.log_dict(metrics, prog_bar=True)
+            metrics = {
+                f"{stage}_per_image_iou": per_image_iou,
+                f"{stage}_dataset_iou": dataset_iou,
+            }
+
+            self.log_dict(
+                metrics, 
+                prog_bar=True, 
+                on_step=False, 
+                on_epoch=True, 
+                logger=True
+            )
 
     def on_train_epoch_end(self):
         # Clear epoch training data
@@ -132,7 +137,7 @@ class UNet(L.LightningModule):
 
     def configure_optimizers(self):
         # Learning rate and parameters for the UNET
-        optimizer = torch.optim.Adam(self.parameters(), lr=2e-4)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
         scheduler = lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=self.hparams.t_max, eta_min=1e-5
         )

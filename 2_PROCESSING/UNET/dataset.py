@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from albumentations.pytorch import ToTensorV2
 
 
-class SpunetDataset(Dataset):
+class SpanDataset(Dataset):
     def __init__(self, image_dir, mask_dir, transform=None):
         """
         Prepare training images and masks for loading
@@ -36,25 +36,13 @@ class SpunetDataset(Dataset):
         mask_name = img_name.replace(".npz", ".png")
         mask_path = os.path.join(self.mask_dir, mask_name)
 
-        mask_viz = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-
-        mask = np.zeros_like(mask_viz, dtype=np.int64)
-        # mask[mask_viz == 127] = 1  # wood_chip
-        mask[mask_viz == 255] = 1  # impurity
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
         if self.transform:
             augmented = self.transform(image=image, mask=mask)
             image = augmented["image"]
             mask = augmented["mask"]
         else:
-            to_tensor = A.Compose(
-                [
-                    A.Resize(544, 544),
-                    ToTensorV2(),
-                ]
-            )
-            augmented = to_tensor(image=image, mask=mask)
-            image = augmented["image"]
-            mask = augmented["mask"]
+            continue
 
         return image, mask.long()
