@@ -1,14 +1,17 @@
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import cv2
 import itertools
+
+import config as c
 import numpy as np
 from CV_FUNCTIONALITY import Particle_Methods, Impurity_Methods
 
-IN_CV = "./2_PROCESSING/CLASSIC_CV/IN_CV/"
-OUT_CV = "./3_POSTPROCESSING/OUT_CV/"
-
-CV_IMG = sorted([f for f in os.listdir(IN_CV) if f.endswith(".png")])
-GROUPS = itertools.groupby(CV_IMG, key=lambda x: (x.split("_")[0], x.split("_")[1]))
+cv_img = sorted([f for f in os.listdir(c.CV_IN) if f.endswith(".png")])
+GROUPS = itertools.groupby(cv_img, key=lambda x: (x.split("_")[0], x.split("_")[1]))
 
 def ensemble_impurities(masks, threshold=3):
     ensemble_sum = np.sum(masks, axis=0).astype(np.float32)
@@ -23,14 +26,14 @@ def ensemble_impurities(masks, threshold=3):
 
 for sample, images in GROUPS:
     if sample == "1":
-        particle_mask = Particle_Methods(IN_CV + str(sample) + "_A.png")
+        particle_mask = Particle_Methods(c.CV_IN + str(sample) + "_A.png")
         mask = particle_mask.otsu()
 
         masks_list = []
 
         for image in images:
             print(image)
-            process_image = Impurity_Methods(IN_CV + image)
+            process_image = Impurity_Methods(c.CV_IN + image)
 
             masks_list.append(process_image.detect_impurities(mask, 2, mode="YUV"))
             masks_list.append(process_image.detect_impurities(mask, 2, mode="HSV"))

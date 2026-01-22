@@ -14,23 +14,20 @@ naming_conventions:
       M: Mask
       P: Prediction
 
-  preprocessed_output:
+  tiled_png:
     pattern: "{sample_id}_{y_location}_{x_location}_{channel_key}.png"
-    description: Individual images after intensity normalization and CLAHE.
-    folder: "./2_PROCESSING/CLASSIC_CV/IN_CV"
-
-  training_arrays:
+    usage: input of CLASSIC_CV
+  
+  tiled_training_array:
     pattern: "{sample_id}_{y_location}_{x_location}_multimodal.npz"
-    description: 13-D array with all light data, chopped regions.
-    folder: "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_ARRAY"
-    format: NumPy Array (Float32)
+    usage: training data
     shape: [Height, Width, 15]
 
-  masks:
+  tiled_masks:
     pattern: "{sample_id}_{x_location}_{y_location}_multimodal.png"
-    description: Mask for each array, also chopped into regions.
-    folder: "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_MASK"
-tensor_stack_definition:
+    usage: tiled training masks
+
+array_channels:
   channels:
     0-2: Ambient (BGR)
     3-5: Blue Light (BGR)
@@ -38,6 +35,50 @@ tensor_stack_definition:
     9-11: Red Light (BGR)
     12-15: Local RMS Texture Map
 
-preprocessing_logic:
-  normalization: Gaussian light correction (129x129 kernel)
-  enhancement: CLAHE
+paths:
+
+  preprocessing: 
+
+    training_data: "./1_PREPROCESSING/IN_PREPROCESS_TRAIN/IN_TRAIN_DATA/"
+    prediction_data: "./1_PREPROCESSING/IN_PREPROCESS_TRAIN/IN_PREDICT_DATA/"
+    
+    json_mask: "./1_PREPROCESSING/IN_PREPROCESS_TRAIN/mask_data.json"
+    png_masks: "./1_PREPROCESSING/IN_PREPROCESS_TRAIN/MASK_PNG"
+  
+  processing:
+
+    classic_cv:
+
+      input: "./2_PROCESSING/CLASSIC_CV/IN_CV/"
+      output: "./3_POSTPROCESSING/OUT_CV/"
+
+    rf:
+
+      model: "./2_PROCESSING/RF/model/rf_woodchip_model.joblib"
+
+      output: "./3_POSTPROCESSING/OUT_RF/"
+
+    unet:
+
+      model: "./1/353ddf8fc5d6464ba39d04e019504093/checkpoints/epoch=49-step=450.ckpt"
+
+      output: "./3_POSTPROCESSING/OUT_UNET/"
+
+    data:
+
+        input:
+
+          train_array: "./2_PROCESSING/DATA/TRAIN/TRAIN_ARRAY/"
+          train_mask: "./2_PROCESSING/DATA/TRAIN/TRAIN_MASK/" 
+
+          validation_array: "./2_PROCESSING/DATA/VALID/VALID_ARRAY/"
+          validation_mask: "./2_PROCESSING/DATA/VALID/VALID_MASK/"
+
+          prediction_array: "./2_PROCESSING/DATA/PREDICT_ARRAY/"
+      
+important_variables:
+  tile_size: 512
+  stride: 256
+
+
+  

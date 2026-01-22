@@ -1,9 +1,16 @@
 import torch
+import os
+import cv2
+
+import numpy as np
 import torch.nn as nn
+import albumentations as A
 import pytorch_lightning as L
 import segmentation_models_pytorch as smp
-from torch.optim import lr_scheduler
 
+from torch.utils.data import Dataset
+from torch.optim import lr_schedule
+from albumentations.pytorch import ToTensorV2
 
 class UNet(L.LightningModule):
     """
@@ -40,10 +47,6 @@ class UNet(L.LightningModule):
             "mean", torch.full((1, in_channels, 1, 1), 0.5)
         )
 
-        # # Define loss function, currently using Dice + Focal Loss
-        # self.dice_loss = smp.losses.DiceLoss(mode='binary', from_logits=True)
-        # self.focal_loss = smp.losses.FocalLoss(mode='binary')
-
         # Tversky and Focal loss
         # 1. Setup the Tversky Loss
         self.tversky_loss = smp.losses.TverskyLoss(
@@ -70,8 +73,7 @@ class UNet(L.LightningModule):
         mask = (mask > 0).float()
         logits_mask = self.forward(image)
 
-        # Ensure correct loss functions from part above
-        # loss = self.dice_loss(logits_mask, mask) + self.focal_loss(logits_mask, mask)
+        # Loss type
         loss = self.tversky_loss(logits_mask, mask) + 5 * self.focal_loss(
             logits_mask, mask
         )
@@ -145,3 +147,41 @@ class UNet(L.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {"scheduler": scheduler, "interval": "step"},
         }
+
+class SpanDataset(Dataset):
+    def __init__(self, image_dir, mask_dir, transform=None):
+        """
+        Prepare training images and masks for loading
+
+        -- Parameters --
+        img_dir : str
+        mask_dir : str
+        transform : Albumentations sequential
+        """
+
+        self.image_dir = image_dir
+        self.mask_dir = mask_dir
+        self.images = sorted([f for f in os.listdir(image_dir) if f.endswith(".npz")])
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        img_name = self.images[idx]
+        img_path = os.path.join(self.image_dir, img_name)
+        image = np.load(img_path)["image"].astype(np.float32)
+
+        mask_name = img_name.replace(".npz", ".png")
+        mask_path = os.path.join(self.mask_dir, mask_name)
+
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+
+        if self.transform:
+            augmented = self.transform(image=image, mask=mask)
+            image = augmented["image"]
+            mask = augmented["mask"]
+        else:
+            continue
+
+        return image, mask.long()

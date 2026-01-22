@@ -1,25 +1,25 @@
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+import cv2
 import torch
 import mlflow
+
+import config as c
 import pytorch_lightning as L
 import albumentations as A
 
+from torch.utils.data import DataLoader
 from albumentations.pytorch import ToTensorV2
 from pytorch_lightning.loggers import MLFlowLogger
-from torch.utils.data import DataLoader
 
-from model import UNet
-from dataset import SpanDataset
+from UNET_FUNCTIONALITY import SpanDataset, UNet
 
 # Train Parameters
-
 EPOCHS = 50
 BATCH_SIZE = 8
-
-TRAIN_ARRAY = "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_ARRAY"
-TRAIN_MASK = "./2_PROCESSING/UNET/IN_UNET/TRAIN/TRAIN_MASK"
-VALID_ARRAY = "./2_PROCESSING/UNET/IN_UNET/VALID/VALID_ARRAY"
-VALID_MASK = "./2_PROCESSING/UNET/IN_UNET/VALID/VALID_MASK"
 
 TRAIN_TRANSFORM = A.Compose([
     A.HorizontalFlip(p=0.5),
@@ -39,26 +39,14 @@ VALID_TRANSFORM = A.Compose([
     ToTensorV2(),
 ])
 
-
-# def rename_model_file():
-#     """
-#     Renames the model file to "model.ckpt"
-#     """
-#     version = max([int(x.split("_")[-1]) for x in os.listdir("./lightning_logs/")])
-#     directory = f"./lightning_logs/version_{version}/checkpoints/"
-#     old = os.path.join(directory, f"epoch={EPOCHS - 1}-step={EPOCHS * 2}.ckpt")
-#     new = os.path.join(directory, "model.ckpt")
-#     os.rename(old, new)
-
-
 def main():
     """
     Functionality for running the training
     """
 
     # Prepare training and validation data with appropriate transforms
-    train_ds = SpanDataset(TRAIN_ARRAY, TRAIN_MASK, transform=TRAIN_TRANSFORM)
-    val_ds = SpanDataset(VALID_ARRAY, VALID_MASK, transform=VALID_TRANSFORM)
+    train_ds = SpanDataset(c.TRAIN_ARRAY, c.TRAIN_MASK, transform=TRAIN_TRANSFORM)
+    val_ds = SpanDataset(c.VALID_ARRAY, c.VALID_MASK, transform=VALID_TRANSFORM)
 
     # Load data for training, change num_workers to increase CPU/GPU load
     train_loader = DataLoader(

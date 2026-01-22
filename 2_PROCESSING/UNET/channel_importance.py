@@ -1,21 +1,22 @@
-import itertools
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+import itertools
+
+import config as c
 import numpy as np
 import matplotlib.pyplot as plt
 
 from PREDICT_FUNCTIONALITY import Predictor
 
-CHECKPOINT = "./1/353ddf8fc5d6464ba39d04e019504093/checkpoints/epoch=49-step=450.ckpt"
-PREDICT_DATA = "./2_PROCESSING/UNET/PREDICT/PREDICT_ARRAY/"
-
-OUTPUT = "./3_POSTPROCESSING/OUT_UNET/"
-
-preprocessed_images = sorted([f for f in os.listdir(PREDICT_DATA) if f.endswith(".npz")])
+preprocessed_images = sorted([f for f in os.listdir(c.PREDICT_ARRAY) if f.endswith(".npz")])
 grouped_list = [(sample, list(images)) 
                 for sample, images in itertools.groupby(preprocessed_images, 
                 key=lambda x: x.split("_")[0])]
 
-predict_image = Predictor(CHECKPOINT)
+predict_image = Predictor(c.UNET_MODEL)
 all_sample_sensitivities = []
 
 for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
@@ -24,7 +25,7 @@ for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
     sample_scores = []
     
     for tile_name in images[:5]: 
-        tile_path = os.path.join(PREDICT_DATA, tile_name)
+        tile_path = os.path.join(c.PREDICT_ARRAY, tile_name)
         
         scores = predict_image.get_channel_sensitivity(tile_path)
         sample_scores.append(scores)

@@ -2,14 +2,16 @@ import os
 import cv2
 import numpy as np
 import joblib
+import matplotlib.pyplot as plt
+
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import jaccard_score
 
 class WoodchipRF:
     def __init__(self, n_estimators=100, max_depth=15):
         self.model = RandomForestClassifier(
             n_estimators=n_estimators, 
-            max_depth=max_depth, 
+            max_depth=max_depth,
+            class_weight="balanced",
             n_jobs=-1, # all CPU cores
             verbose=1
         )
@@ -32,23 +34,11 @@ class WoodchipRF:
 
     def train(self, image_dir, mask_dir):
         X, y = self._prep_data(image_dir, mask_dir)
-        
+
         self.model.fit(X, y)
         print("Training complete.")
 
     def save(self, path):
         joblib.dump(self.model, path)
 
-    def load(self, path):
-        self.model = joblib.load(path)
 
-    def predict_tile(self, tile_path):
-        """Predicts a single tile and reshapes it back to an image."""
-        img = np.load(tile_path)["image"]
-        h, w, c = img.shape
-        
-        flat_img = img.reshape(-1, c)
-        
-        preds = self.model.predict(flat_img)
-
-        return preds.reshape(h, w).astype(np.uint8)

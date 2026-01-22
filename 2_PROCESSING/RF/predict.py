@@ -1,12 +1,22 @@
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import cv2
+import config as c
 
-from FOREST_FUNCTIONALITY import WoodchipRF
+from PREDICT_FUNCTIONALITY import Predictor
 
-rf_handler = WoodchipRF()
-rf_handler.load("./2_PROCESSING/RF/model/rf_woodchip_model.joblib") 
+preprocessed_array = sorted([f for f in os.listdir(c.PREDICT_ARRAY) if f.endswith(".npz")])
+grouped_list = [(sample, list(images)) 
+                for sample, images in itertools.groupby(preprocessed_array, 
+                key=lambda x: x.split("_")[0])]
 
-test_tile = "./2_PROCESSING/UNET/PREDICT/PREDICT_ARRAY/2_y0_x0_multimodal.npz"
+predict_image = Predictor(c.RF_MODEL)
 
-mask_result = rf_handler.predict_tile(test_tile)
+for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
 
-cv2.imwrite("./2_PROCESSING/RF/pred.png", mask_result * 255)
+    prediction = predict_image.stitch_tiles(c.PREDICT_ARRAY, images, tile_size=c.TILE_SIZE, stride=c.STRIDE)
+
+    cv2.imwrite(c.RF_OUT + f"{sample}_P_RF.png", prediction)
