@@ -39,17 +39,16 @@ paths:
 
   preprocessing: 
 
-    training_data: "./1_PREPROCESSING/IN_PREPROCESS_TRAIN/IN_TRAIN_DATA/"
-    prediction_data: "./1_PREPROCESSING/IN_PREPROCESS_TRAIN/IN_PREDICT_DATA/"
+    training_data: "./1_PREPROCESSING/IN_PREPROCESS/IN_TRAIN_DATA/"
+    prediction_data: "./1_PREPROCESSING/IN_PREPROCESS/IN_PREDICT_DATA/"
     
-    json_mask: "./1_PREPROCESSING/IN_PREPROCESS_TRAIN/mask_data.json"
-    png_masks: "./1_PREPROCESSING/IN_PREPROCESS_TRAIN/MASK_PNG"
+    json_mask: "./1_PREPROCESSING/IN_PREPROCESS/mask_data.json"
+    png_masks: "./1_PREPROCESSING/IN_PREPROCESS/MASK_PNG/"
   
   processing:
 
     classic_cv:
 
-      input: "./2_PROCESSING/CLASSIC_CV/IN_CV/"
       output: "./3_POSTPROCESSING/OUT_CV/"
 
     rf:
@@ -68,17 +67,20 @@ paths:
 
         input:
 
-          train_array: "./2_PROCESSING/DATA/TRAIN/TRAIN_ARRAY/"
-          train_mask: "./2_PROCESSING/DATA/TRAIN/TRAIN_MASK/" 
+          tiled_images: "./2_PROCESSING/_DATA/IMG_PNG/"
 
-          validation_array: "./2_PROCESSING/DATA/VALID/VALID_ARRAY/"
-          validation_mask: "./2_PROCESSING/DATA/VALID/VALID_MASK/"
+          train_array: "./2_PROCESSING/_DATA/TRAIN/TRAIN_ARRAY/"
+          train_mask: "./2_PROCESSING/_DATA/TRAIN/TRAIN_MASK/" 
 
-          prediction_array: "./2_PROCESSING/DATA/PREDICT_ARRAY/"
+          validation_array: "./2_PROCESSING/_DATA/VALID/VALID_ARRAY/"
+          validation_mask: "./2_PROCESSING/_DATA/VALID/VALID_MASK/"
+
+          prediction_array: "./2_PROCESSING/_DATA/PREDICT_ARRAY/"
       
 important_variables:
   tile_size: 512
   stride: 256
+
 
 
   

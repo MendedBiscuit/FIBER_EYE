@@ -9,8 +9,9 @@ import pytorch_lightning as L
 import segmentation_models_pytorch as smp
 
 from torch.utils.data import Dataset
-from torch.optim import lr_schedule
+from torch.optim import lr_scheduler
 from albumentations.pytorch import ToTensorV2
+
 
 class UNet(L.LightningModule):
     """
@@ -33,26 +34,33 @@ class UNet(L.LightningModule):
         # Set model parameters
         self.model = smp.UnetPlusPlus(
             encoder_name=encoder_name,
-            encoder_depth=5,
-            encoder_weights="imagenet",
+            encoder_depth=4,
+            encoder_weights=None,
             in_channels=in_channels,
             classes=classes,
             **kwargs,
         )
 
-        self.register_buffer(
-            "std", torch.full((1, in_channels, 1, 1), 0.5)
-        )
-        self.register_buffer(
-            "mean", torch.full((1, in_channels, 1, 1), 0.5)
-        )
+        means = [6.82410381e+01, 6.76335912e+01, 6.54805091e+01, 1.12030697e+02,
+                5.29831737e+01, 2.74933674e+01, 8.63749225e+01, 1.27529567e+02,
+                4.93052940e+01, 3.00348355e+01, 4.05368050e+01, 1.24959776e+02,
+                9.92451729e-02, 1.01227612e-01, 1.03890658e-01]
+
+        stds =[71.01557075, 73.78593944, 76.9774136,  87.64590613, 67.35343469, 44.09452226,
+                66.45241989, 71.36465389, 68.49253075, 42.0748052,  48.7104614,  68.77368723,
+                0.09902525,  0.10010371,  0.10150998]
+        
+        mean_tensor = torch.tensor(calculated_means).view(1, in_channels, 1, 1).float()
+        std_tensor = torch.tensor(calculated_stds).view(1, in_channels, 1, 1).float()
+
+        # 3. Register as buffersw
+        self.register_buffer("mean", mean_tensor)
+        self.register_buffer("std", std_tensor)
 
         # Tversky and Focal loss
         # 1. Setup the Tversky Loss
-        self.tversky_loss = smp.losses.TverskyLoss(
-            mode="binary", alpha=0.3, beta=0.7, from_logits=True
-        )
-        self.focal_loss = smp.losses.FocalLoss(mode="binary", alpha=0.25, gamma=2.0)
+        self.tversky_loss = smp.losses.TverskyLoss(mode="binary", alpha=0.7, beta=0.5)  
+        self.focal_loss = smp.losses.FocalLoss(mode="binary")
 
         # Prepare for training outputs
         self.training_step_outputs = []
@@ -87,9 +95,11 @@ class UNet(L.LightningModule):
         )
 
         step_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
-        
+
         self.log(f"{stage}_loss", loss, prog_bar=True, on_step=True, on_epoch=True)
-        self.log(f"{stage}_iou_step", step_iou, prog_bar=True, on_step=True, on_epoch=False)
+        self.log(
+            f"{stage}_iou_step", step_iou, prog_bar=True, on_step=True, on_epoch=False
+        )
 
         return {"loss": loss, "tp": tp, "fp": fp, "fn": fn, "tn": tn}
 
@@ -106,26 +116,22 @@ class UNet(L.LightningModule):
         return out["loss"]
 
     def shared_epoch_end(self, outputs, stage):
-            tp = torch.cat([x["tp"] for x in outputs])
-            fp = torch.cat([x["fp"] for x in outputs])
-            fn = torch.cat([x["fn"] for x in outputs])
-            tn = torch.cat([x["tn"] for x in outputs])
+        tp = torch.cat([x["tp"] for x in outputs])
+        fp = torch.cat([x["fp"] for x in outputs])
+        fn = torch.cat([x["fn"] for x in outputs])
+        tn = torch.cat([x["tn"] for x in outputs])
 
-            per_image_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro-imagewise")
-            dataset_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+        per_image_iou = smp.metrics.iou_score(
+            tp, fp, fn, tn, reduction="micro-imagewise"
+        )
+        dataset_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
 
-            metrics = {
-                f"{stage}_per_image_iou": per_image_iou,
-                f"{stage}_dataset_iou": dataset_iou,
-            }
+        metrics = {
+            f"{stage}_per_image_iou": per_image_iou,
+            f"{stage}_dataset_iou": dataset_iou,
+        }
 
-            self.log_dict(
-                metrics, 
-                prog_bar=True, 
-                on_step=False, 
-                on_epoch=True, 
-                logger=True
-            )
+        self.log_dict(metrics, prog_bar=True, on_step=False, on_epoch=True, logger=True)
 
     def on_train_epoch_end(self):
         # Clear epoch training data
@@ -147,6 +153,7 @@ class UNet(L.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {"scheduler": scheduler, "interval": "step"},
         }
+
 
 class SpanDataset(Dataset):
     def __init__(self, image_dir, mask_dir, transform=None):
@@ -181,7 +188,5 @@ class SpanDataset(Dataset):
             augmented = self.transform(image=image, mask=mask)
             image = augmented["image"]
             mask = augmented["mask"]
-        else:
-            continue
 
         return image, mask.long()

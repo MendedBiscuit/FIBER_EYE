@@ -21,23 +21,28 @@ from UNET_FUNCTIONALITY import SpanDataset, UNet
 EPOCHS = 50
 BATCH_SIZE = 8
 
-TRAIN_TRANSFORM = A.Compose([
-    A.HorizontalFlip(p=0.5),
-    A.VerticalFlip(p=0.5),
-    A.Affine(
-        translate_percent={"x": (-0.0625, 0.0625), "y": (-0.0625, 0.0625)}, 
-        scale=(0.9, 1.1), 
-        rotate=(-45, 45), 
-        p=0.5
-    ),
-    A.ElasticTransform(alpha=1, sigma=50, alpha_affine=50, p=0.2), 
-    A.GaussNoise(std_dev=(10.0, 50.0), p=0.2),
-    ToTensorV2(),
-])
+TRAIN_TRANSFORM = A.Compose(
+    [
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
+        A.Affine(
+            translate_percent={"x": (-0.0625, 0.0625), "y": (-0.0625, 0.0625)},
+            scale=(0.9, 1.1),
+            rotate=(-45, 45),
+            p=0.5,
+        ),
+        A.ElasticTransform(alpha=1, sigma=50, alpha_affine=50, p=0.2),
+        A.GaussNoise(std_dev=(10.0, 50.0), p=0.2),
+        ToTensorV2(),
+    ]
+)
 
-VALID_TRANSFORM = A.Compose([
-    ToTensorV2(),
-])
+VALID_TRANSFORM = A.Compose(
+    [
+        ToTensorV2(),
+    ]
+)
+
 
 def main():
     """
@@ -62,7 +67,7 @@ def main():
     # mlflow logger
     mlflow_logger = L.loggers.MLFlowLogger(
         experiment_name="Woodchip_Impurity_Detection",
-        tracking_uri="sqlite:///mlflow.db"
+        tracking_uri="sqlite:///mlflow.db",
     )
 
     trainer = L.Trainer(
@@ -79,5 +84,6 @@ def main():
 
     # rename_model_file()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

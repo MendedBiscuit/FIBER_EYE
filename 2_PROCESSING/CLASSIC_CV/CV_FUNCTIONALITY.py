@@ -1,6 +1,11 @@
+import os
+import re
 import cv2
+
 import numpy as np
 
+from skimage.feature import local_binary_pattern
+from scipy.spatial import distance
 
 class Particle_Methods:
     def __init__(self, pth_to_img):
@@ -110,7 +115,6 @@ class Particle_Methods:
         _, otsu_img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
 
         return otsu_img
-
 
 class Impurity_Methods:
     def __init__(self, pth_to_img):
@@ -239,3 +243,93 @@ class Impurity_Methods:
         impurity_mask = cv2.bitwise_and(combined, combined, mask=wood_mask)
 
         return impurity_mask
+
+class WoodScanner:
+
+    def get_features(self, roi_lab, roi_hsv, roi_gray):
+
+        m_lab = cv2.mean(roi_lab)[:3]
+        m_hsv = cv2.mean(roi_hsv)[:3]
+        
+        lbp = local_binary_pattern(roi_gray, 8, 1, method="uniform")
+        hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, 12), range=(0, 11), density=True)
+        
+        return np.hstack([m_lab, m_hsv, hist])
+
+    def get_impurity_mask(self, patch_size=16, stride=4, sensitivity=5.0):
+        h, w = self.gray.shape
+        _, wood_mask = cv2.threshold(self.gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        
+        all_features = []
+        for y in range(0, h - patch_size, patch_size):
+            for x in range(0, w - patch_size, patch_size):
+                if wood_mask[y + patch_size//2, x + patch_size//2] > 0:
+                    feat = self.get_features(self.lab[y:y+patch_size, x:x+patch_size],
+                                           self.hsv[y:y+patch_size, x:x+patch_size],
+                                           self.gray[y:y+patch_size, x:x+patch_size])
+                    all_features.append(feat)
+        
+        data = np.array(all_features)
+        mu = np.mean(data, axis=0)
+        inv_cov = np.linalg.pinv(np.cov(data.T))
+
+        map_h, map_w = (h // stride), (w // stride)
+        heatmap = np.zeros((map_h, map_w), dtype=np.float32)
+
+        for y_idx, y in enumerate(range(0, h - patch_size, stride)):
+            for x_idx, x in enumerate(range(0, w - patch_size, stride)):
+                if wood_mask[y + patch_size//2, x + patch_size//2] > 0:
+                    feat = self.get_features(self.lab[y:y+patch_size, x:x+patch_size],
+                                           self.hsv[y:y+patch_size, x:x+patch_size],
+                                           self.gray[y:y+patch_size, x:x+patch_size])
+                    
+                    dist = distance.mahalanobis(feat, mu, inv_cov)
+                    heatmap[y_idx, x_idx] = dist
+
+        heatmap_full = cv2.resize(heatmap, (w, h), interpolation=cv2.INTER_CUBIC)
+
+        heatmap_smooth = cv2.GaussianBlur(heatmap_full, (patch_size|1, patch_size|1), 0)
+
+        _, binary_out = cv2.threshold(heatmap_smooth, sensitivity, 255, cv2.THRESH_BINARY)
+        
+        result = cv2.bitwise_and(np.uint8(binary_out), wood_mask)
+        
+        kernel = np.ones((5,5), np.uint8)
+        result = cv2.morphologyEx(result, cv2.MORPH_OPEN, kernel)
+
+        return result
+    
+    def predict_tile(self, pth_to_tile):
+        img = cv2.imread(pth_to_tile)
+
+        self.lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        self.hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        self.gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        return self.get_impurity_mask()
+
+    def stitch_tiles(self, directory_path, sample_tiles, tile_size=512, stride=256):
+        all_coords = []
+        for f in sample_tiles:
+            match = re.search(r"y(\d+)_x(\d+)", f)
+            if match:
+                y, x = int(match.group(1)), int(match.group(2))
+                all_coords.append((f, y, x))
+
+        max_y = max(c[1] for c in all_coords) + tile_size
+        max_x = max(c[2] for c in all_coords) + tile_size
+
+        full_prob_map = np.zeros((max_y, max_x), dtype=np.float32)
+        count_mask = np.zeros((max_y, max_x), dtype=np.float32)
+
+        for fname, y, x in all_coords:
+            tile_path = os.path.join(directory_path, fname)
+
+            mask_tile = self.predict_tile(tile_path)
+
+            full_prob_map[y : y + tile_size, x : x + tile_size] += mask_tile
+            count_mask[y : y + tile_size, x : x + tile_size] += 1
+
+        final_mask = full_prob_map / np.maximum(count_mask, 1)
+
+        return (final_mask > 0.5).astype(np.uint8)

@@ -2,28 +2,24 @@ import yaml
 import os
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-YAML_PATH = os.path.join(ROOT_DIR, "nomenclature.yaml")
 
-def load_yaml():
-    with open(YAML_PATH, "r") as file:
-        return yaml.safe_load(file)
+with open(os.path.join(ROOT_DIR, "nomenclature.yaml"), "r") as f:
+    cfg = yaml.safe_load(f)
 
-cfg = load_yaml()
 
-def get_path(category, sc=None, ssc=None, sssc=None, ssssc=None):
+def get_path(*keys):
     try:
-        path = cfg[category] 
-        if sc: path = path[sc]
-        if ssc: path = path[ssc]
-        if sssc: path = path[sssc]
-        if ssssc: path = path[ssssc]
-        
-        if isinstance(path, dict):
-            return None
-            
-        return os.path.abspath(os.path.join(ROOT_DIR, path))
+        temp = cfg
+        for k in keys:
+            temp = temp[k]
+
+        if isinstance(temp, str):
+            return os.path.abspath(os.path.join(ROOT_DIR, temp))
+
+        return temp
     except (KeyError, TypeError):
         return None
+
 
 # paths
 
@@ -33,7 +29,7 @@ IN_PREDICT_DATA = get_path("paths", "preprocessing", "prediction_data")
 RAW_MASKS = get_path("paths", "preprocessing", "json_mask")
 PNG_MASKS = get_path("paths", "preprocessing", "png_masks")
 
-CV_IN = get_path("paths", "processing", "classic_cv", "input")
+IMG_PNG = get_path("paths", "processing", "data", "input", "tiled_images")
 
 UNET_MODEL = get_path("paths", "processing", "unet", "model")
 RF_MODEL = get_path("paths", "processing", "rf", "model")
@@ -53,9 +49,19 @@ TILE_SIZE = get_path("important_variables", "tile_size")
 STRIDE = get_path("important_variables", "stride")
 
 CHANNEL_LABELS = [
-                    "Ambient Blue", "Ambient Green", "Ambient Red",
-                    "BlueLED Blue", "BlueLED Green", "BlueLED Red",
-                    "GreenLED Blue", "GreenLED Green", "GreenLED Red",
-                    "RedLED Blue", "RedLED Green", "RedLED Red",
-                    "RMS Texture 1", "RMS Texture 2", "RMS Texture 3"
-                 ]
+    "Ambient Blue",
+    "Ambient Green",
+    "Ambient Red",
+    "BlueLED Blue",
+    "BlueLED Green",
+    "BlueLED Red",
+    "GreenLED Blue",
+    "GreenLED Green",
+    "GreenLED Red",
+    "RedLED Blue",
+    "RedLED Green",
+    "RedLED Red",
+    "RMS Texture 1",
+    "RMS Texture 2",
+    "RMS Texture 3",
+]
