@@ -33,7 +33,7 @@ class Calculate_Metrics:
     def f1_score(self):
         p = self.precision()
         r = self.recall()
-        if (p + r) == 0: return 0.0
+        if (p + r) == 0: return (0.0, p, r)
         return (2 * (p * r) / (p + r), p, r)
 
     def get_metrics(self):

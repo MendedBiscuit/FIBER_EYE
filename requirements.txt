@@ -7,3 +7,5 @@ pytorch-lightning
 albumentations
 matplotlib
 mlflow
+scikit-image
+ultralytics

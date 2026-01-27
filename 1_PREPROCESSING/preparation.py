@@ -9,7 +9,7 @@ import itertools
 
 from pycocotools.coco import COCO
 
-from PREPROCESS import Preprocessor, masks_from_json
+from PREPROCESS import Preprocessor, masks_from_json, yolo_masks
 
 TRAIN_THRESH = 8 / 18  # Portion of images used as training data
 VALID_THRESH = 10 / 18
@@ -44,9 +44,8 @@ for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
     channel_array = processor.get_stack()
     mask = cv2.imread(os.path.join(c.PNG_MASKS, f"{sample}_M.png"))
 
-    # Tile UNET training data
+    # Tile data, ensure train-val-pred split using threshold
     if int(sample) <= int(TRAIN_THRESH * num_samples):
-        print(sample)
         processor.UNET_tile_and_save(
             sample,
             channel_array,
@@ -54,11 +53,27 @@ for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
             c.TRAIN_ARRAY,
             c.TRAIN_MASK,
             tile_size=c.TILE_SIZE,
-            stride=c.STRIDE,
-        )
+            stride
+            =c.STRIDE,
+            )
+
+        yolo_masks(
+            sample, 
+            c.YOLO_MASKS, 
+            c.YOLO_TRAIN_MASK, 
+            tile_size=c.TILE_SIZE, 
+            stride=c.STRIDE
+            )
+        
+        processor.img_tile_and_save(
+            sample, 
+            c.YOLO_TRAIN_IMG, 
+            tile_size=c.TILE_SIZE, 
+            stride=c.STRIDE
+            )
+
 
     elif int(TRAIN_THRESH * num_samples) < int(sample) <= int(VALID_THRESH * num_samples):
-        print(sample)
         processor.UNET_tile_and_save(
             sample,
             channel_array,
@@ -68,9 +83,23 @@ for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
             tile_size=c.TILE_SIZE,
             stride=c.STRIDE,
         )
+
+        yolo_masks(
+            sample, 
+            c.YOLO_MASKS, 
+            c.YOLO_TRAIN_MASK, 
+            tile_size=c.TILE_SIZE, 
+            stride=c.STRIDE
+            )
+        
+        processor.img_tile_and_save(
+            sample, 
+            c.YOLO_TRAIN_IMG, 
+            tile_size=c.TILE_SIZE, 
+            stride=c.STRIDE
+            )
     
     else:
-        print(sample)
         processor.UNET_tile_and_save(
         sample,
         channel_array,
@@ -82,8 +111,11 @@ for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
     )
 
         # Save tiled images for CV methods
-        processor.CV_tile_and_save(
-        sample, c.IMG_PNG, tile_size=c.TILE_SIZE, stride=c.STRIDE
-    )
+        processor.img_tile_and_save(
+            sample, 
+            c.IMG_PNG, 
+            tile_size=c.TILE_SIZE, 
+            stride=c.STRIDE
+            )
 
     

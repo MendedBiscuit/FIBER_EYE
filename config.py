@@ -28,6 +28,7 @@ IN_PREDICT_DATA = get_path("paths", "preprocessing", "prediction_data")
 
 RAW_MASKS = get_path("paths", "preprocessing", "json_mask")
 PNG_MASKS = get_path("paths", "preprocessing", "png_masks")
+YOLO_MASKS = get_path("paths", "preprocessing", "yolo_mask")
 
 IMG_PNG = get_path("paths", "processing", "data", "input", "tiled_images")
 
@@ -37,12 +38,16 @@ RF_MODEL = get_path("paths", "processing", "rf", "model")
 CV_OUT = get_path("paths", "processing", "classic_cv", "output")
 UNET_OUT = get_path("paths", "processing", "unet", "output")
 RF_OUT = get_path("paths", "processing", "rf", "output")
+YOLO_OUT = get_path("paths", "processing", "yolo", "output")
 
 TRAIN_ARRAY = get_path("paths", "processing", "data", "input", "train_array")
 TRAIN_MASK = get_path("paths", "processing", "data", "input", "train_mask")
 VALID_ARRAY = get_path("paths", "processing", "data", "input", "validation_array")
 VALID_MASK = get_path("paths", "processing", "data", "input", "validation_mask")
 PREDICT_ARRAY = get_path("paths", "processing", "data", "input", "prediction_array")
+
+YOLO_TRAIN_IMG = get_path("paths", "processing", "data", "input", "yolo_png")
+YOLO_TRAIN_MASK = get_path("paths", "processing", "data", "input", "yolo_mask")
 
 # vars
 TILE_SIZE = get_path("important_variables", "tile_size")

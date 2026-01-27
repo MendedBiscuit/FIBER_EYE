@@ -44,6 +44,7 @@ paths:
     
     json_mask: "./1_PREPROCESSING/IN_PREPROCESS/mask_data.json"
     png_masks: "./1_PREPROCESSING/IN_PREPROCESS/MASK_PNG/"
+    yolo_mask: "./1_PREPROCESSING/IN_PREPROCESS/yolo_mask_data.json"
   
   processing:
 
@@ -62,6 +63,12 @@ paths:
       model: "./1/353ddf8fc5d6464ba39d04e019504093/checkpoints/epoch=49-step=450.ckpt"
 
       output: "./3_POSTPROCESSING/OUT_UNET/"
+    
+    yolo:
+
+      model: "./2_PROCESSING/yolo/model/??????"
+
+      output: "./3_POSTPROCESSING/OUT_YOLO/"
 
     data:
 
@@ -76,6 +83,11 @@ paths:
           validation_mask: "./2_PROCESSING/_DATA/VALID/VALID_MASK/"
 
           prediction_array: "./2_PROCESSING/_DATA/PREDICT_ARRAY/"
+
+          yolo_png: "./2_PROCESSING/_DATA/YOLO_TRAIN/YOLO_IMG"
+          yolo_mask: "./2_PROCESSING/_DATA/YOLO_TRAIN/YOLO_MASK"
+
+
       
 important_variables:
   tile_size: 512

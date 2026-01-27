@@ -1,5 +1,6 @@
 import os
 import cv2
+import json
 import numpy as np
 
 from pycocotools.coco import COCO
@@ -45,12 +46,12 @@ class Preprocessor:
 
     def process_clahe_intensity(self):
         for key, img in self.channels.items():
-            proc = self.normalise_intensity(img)
-            self.processed_dict[key] = self.apply_clahe(proc)
+            # proc = self.normalise_intensity(img)
+            self.processed_dict[key] = self.apply_clahe(img)
 
         return self.processed_dict
 
-    def CV_tile_and_save(self, sample_num, image_out, tile_size=512, stride=256):
+    def img_tile_and_save(self, sample_num, image_out, tile_size=512, stride=256):
         for key, img in self.processed_dict.items():
             h, w = img.shape[:2]
             tile_count = 0
@@ -91,9 +92,7 @@ class Preprocessor:
 
         return final_stack
 
-    def UNET_tile_and_save(
-        self, sample_num, stack, mask, stack_out, mask_out, tile_size=512, stride=256
-    ):
+    def UNET_tile_and_save(self, sample_num, stack, mask, stack_out, mask_out, tile_size=512, stride=256):
         h, w = stack.shape[:2]
         tile_count = 0
 
@@ -155,3 +154,49 @@ def masks_from_json(json_path, output_dir):
         target_name = f"{sample_num}_M.png"
 
         cv2.imwrite(os.path.join(output_dir, target_name), mask)
+
+def yolo_masks(sample_num, json_path, output_dir, tile_size=524, stride=256):
+    os.makedirs(os.path.join(output_dir, "images"), exist_ok=True)
+    os.makedirs(os.path.join(output_dir, "labels"), exist_ok=True)
+
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+
+    for task in data:
+
+        h, w = img.shape[:2]
+
+        for y in range(0, h - tile_size + 1, stride):
+            for x in range(0, w - tile_size + 1, stride):
+                
+                name = f"{sample_num}_y{y}_x{x}"
+                yolo_labels = []
+
+                if 'annotations' in task and task['annotations']:
+                    for ann in task['annotations'][0]['result']:
+                        if ann['type'] != 'polygonlabels': continue
+                        
+                        points = np.array(ann['value']['points'])
+                        points[:, 0] = points[:, 0] * w / 100.0
+                        points[:, 1] = points[:, 1] * h / 100.0
+
+                        rel_points = points.copy()
+                        rel_points[:, 0] -= x
+                        rel_points[:, 1] -= y
+
+                        if (np.any(rel_points[:, 0] >= 0) and np.any(rel_points[:, 0] <= tile_size) and
+                            np.any(rel_points[:, 1] >= 0) and np.any(rel_points[:, 1] <= tile_size)):
+                            
+                            rel_points[:, 0] = np.clip(rel_points[:, 0], 0, tile_size)
+                            rel_points[:, 1] = np.clip(rel_points[:, 1], 0, tile_size)
+
+                            rel_points[:, 0] /= tile_size
+                            rel_points[:, 1] /= tile_size
+                            
+                            class_id = 0
+                            flat_pts = rel_points.flatten().tolist()
+                            yolo_labels.append(f"{class_id} " + " ".join([f"{p:.6f}" for p in flat_pts]))
+
+                if yolo_labels:
+                    with open(os.path.join(output_dir, f"{name}.txt"), 'w') as f_out:
+                        f_out.write("\n".join(yolo_labels))

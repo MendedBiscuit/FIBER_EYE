@@ -13,6 +13,7 @@ __pycache__/
 .venv/
 
 # my files
+
 1/
 
 1_PREPROCESSING/IN_PREPROCESS
@@ -25,8 +26,6 @@ __pycache__/
 3_POSTPROCESSING/OUT_CV
 3_POSTPROCESSING/OUT_UNET
 3_POSTPROCESSING/OUT_RF
-
-
 
 
 .ruff_cache/

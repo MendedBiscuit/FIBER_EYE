@@ -52,7 +52,8 @@ for method_path, method_name in OUTPUTS:
             continue
 
         evaluate = Calculate_Metrics(pred_path, mask_path)
-        metrics = evaluate.get_metrics() # List of (name, value)
+        print(pred_path)
+        metrics = evaluate.get_metrics() # (name, value)
 
         for name, value in metrics:
             totals[name] += value
