@@ -11,7 +11,7 @@ import numpy as np
 from CV_FUNCTIONALITY import WoodScanner
 
 cv_img = sorted(
-    [f for f in os.listdir(c.IMG_PNG) if f.endswith(".png")]
+    [f for f in os.listdir(c.YOLO_PREDICT_IMG) if f.endswith(".png")]
 )
 grouped_list = [
     (sample, list(images))
@@ -23,7 +23,7 @@ grouped_list = [
 for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
 
     predict_image = WoodScanner()
-    prediction = predict_image.stitch_tiles(c.IMG_PNG, 
+    prediction = predict_image.stitch_tiles(c.YOLO_PREDICT_IMG, 
                                             images,
                                             tile_size=c.TILE_SIZE, 
                                             stride=c.STRIDE)

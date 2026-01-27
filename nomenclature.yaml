@@ -66,7 +66,8 @@ paths:
     
     yolo:
 
-      model: "./2_PROCESSING/yolo/model/??????"
+      base_model: "./2_PROCESSING/YOLO/models/yolo26m-seg.pt"
+      model: "./runs/detect/train/weights/best.pt"
 
       output: "./3_POSTPROCESSING/OUT_YOLO/"
 
@@ -74,19 +75,28 @@ paths:
 
         input:
 
-          tiled_images: "./2_PROCESSING/_DATA/IMG_PNG/"
+          train:
 
-          train_array: "./2_PROCESSING/_DATA/TRAIN/TRAIN_ARRAY/"
-          train_mask: "./2_PROCESSING/_DATA/TRAIN/TRAIN_MASK/" 
+            train_array: "./2_PROCESSING/_DATA/TRAIN/UNET_RF/TRAIN_ARRAY/"
+            train_mask: "./2_PROCESSING/_DATA/TRAIN/UNET_RF/TRAIN_MASK/" 
 
-          validation_array: "./2_PROCESSING/_DATA/VALID/VALID_ARRAY/"
-          validation_mask: "./2_PROCESSING/_DATA/VALID/VALID_MASK/"
+            yolo_images: "./2_PROCESSING/_DATA/TRAIN/YOLO/images"
+            yolo_labels: "./2_PROCESSING/_DATA/TRAIN/YOLO/labels"
 
-          prediction_array: "./2_PROCESSING/_DATA/PREDICT_ARRAY/"
+          valid:
 
-          yolo_png: "./2_PROCESSING/_DATA/YOLO_TRAIN/YOLO_IMG"
-          yolo_mask: "./2_PROCESSING/_DATA/YOLO_TRAIN/YOLO_MASK"
+            validation_array: "./2_PROCESSING/_DATA/VALID/UNET_RF/VALID_ARRAY/"
+            validation_mask: "./2_PROCESSING/_DATA/VALID/UNET_RF/VALID_MASK/"
 
+            yolo_images: "./2_PROCESSING/_DATA/VALID/YOLO/images"
+            yolo_labels: "./2_PROCESSING/_DATA/VALID/YOLO/labels"
+                            
+          predict:
+
+            yolo_images: "./2_PROCESSING/_DATA/PREDICT/YOLO/images"
+            yolo_labels: "./2_PROCESSING/_DATA/PREDICT/YOLO/labels"
+
+            predict_array: "./2_PROCESSING/_DATA/PREDICT/UNET_RF/PREDICT_ARRAY"
 
       
 important_variables:

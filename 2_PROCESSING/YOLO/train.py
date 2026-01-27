@@ -1,8 +1,9 @@
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+import yaml
 import torch
 
 import config as c
@@ -11,17 +12,18 @@ import torch.nn as nn
 from ultralytics import YOLO
 
 dataset_config = {
-    'path': '/home/julian/Data/fibereye/datasets/woodchips_tiled', # Base directory
-    'train': 'images',  # Folder containing tiled .png files
-    'val': 'images',    # Folder for validation
-    'names': {0: 'WoodChip'}
+    "train": c.YOLO_TRAIN_IMG,
+    "val": c.YOLO_VALID_IMG,
+    "names": {0: "bg", 1: "WoodChip"}
 }
 
-model = YOLO("yolo26n-seg.yaml") 
+with open('data.yaml', 'w') as f:
+    yaml.dump(dataset_config, f)
 
+model = YOLO(c.BASE_YOLO_MODEL) 
 model.train(
-    data="./2_PROCESSING/YOLO/yolo_config.yaml",   
+    data='data.yaml',  
     imgsz=544,            
     batch=16, 
-    device=0,               
+    device="cpu"
 )

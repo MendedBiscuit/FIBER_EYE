@@ -51,8 +51,9 @@ class Preprocessor:
 
         return self.processed_dict
 
-    def img_tile_and_save(self, sample_num, image_out, tile_size=512, stride=256):
-        for key, img in self.processed_dict.items():
+    def img_tile_and_save(self, sample_num, image_out, mode="CV", tile_size=512, stride=256):
+        if mode == "YOLO":
+            img = self.processed_dict["A"]
             h, w = img.shape[:2]
             tile_count = 0
 
@@ -60,10 +61,83 @@ class Preprocessor:
                 for x in range(0, w - tile_size + 1, stride):
                     tile_image = img[y : y + tile_size, x : x + tile_size]
 
-                    tile_id = f"{sample_num}_{key}_y{y}_x{x}"
+                    tile_id = f"{sample_num}_A_y{y}_x{x}"
 
                     cv2.imwrite(os.path.join(image_out, f"{tile_id}.png"), tile_image)
                     tile_count += 1
+    
+        else:
+            for key, img in self.processed_dict.items():
+                h, w = img.shape[:2]
+                tile_count = 0
+
+                for y in range(0, h - tile_size + 1, stride):
+                    for x in range(0, w - tile_size + 1, stride):
+                        tile_image = img[y : y + tile_size, x : x + tile_size]
+
+                        tile_id = f"{sample_num}_{key}_y{y}_x{x}"
+
+                        cv2.imwrite(os.path.join(image_out, f"{tile_id}.png"), tile_image)
+                        tile_count += 1
+
+    def yolo_masks(self, sample_num, json_path, output_dir, tile_size=512, stride=256):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        with open(json_path, "r") as f:
+            data = json.load(f)
+
+        current_task = None
+
+        for task in data:
+            image_path = task.get("data", {}).get("image", "").split("/")[-1]
+            
+            if f"{sample_num}" in image_path.split("_")[0]:
+                current_task = task
+                break
+        
+        if not current_task:
+            print(f"Warning: No annotations found for sample {sample_num}")
+            return
+
+        h, w = 1024, 1024 
+        
+        for y in range(0, h - tile_size + 1, stride):
+            for x in range(0, w - tile_size + 1, stride):
+                
+                tile_id = f"{sample_num}_A_y{y}_x{x}"
+                yolo_labels = []
+
+                for ann in current_task.get("annotations", [{}])[0].get("result", []):
+                    if ann.get("type") != "polygonlabels": 
+                        continue
+
+                    points = np.array(ann["value"]["points"])
+                    points[:, 0] = points[:, 0] * w / 100.0
+                    points[:, 1] = points[:, 1] * h / 100.0
+
+                    rel_points = points.copy()
+                    rel_points[:, 0] -= x
+                    rel_points[:, 1] -= y
+
+                    if (np.any((rel_points[:, 0] >= 0) & (rel_points[:, 0] <= tile_size)) and
+                        np.any((rel_points[:, 1] >= 0) & (rel_points[:, 1] <= tile_size))):
+
+                        rel_points[:, 0] = np.clip(rel_points[:, 0], 0, tile_size)
+                        rel_points[:, 1] = np.clip(rel_points[:, 1], 0, tile_size)
+
+                        rel_points[:, 0] /= tile_size
+                        rel_points[:, 1] /= tile_size
+                        
+                        label = ann["value"]["polygonlabels"][0]
+                        class_id = 0 if label == "wood_chip" else 1
+                        
+                        flat_pts = rel_points.flatten().tolist()
+                        yolo_labels.append(f"{class_id} " + " ".join([f"{p:.6f}" for p in flat_pts]))
+
+                if yolo_labels:
+                    with open(os.path.join(output_dir, f"{tile_id}.txt"), "w") as f_out:
+                        f_out.write("\n".join(yolo_labels))
 
     def get_12_channel_stack(self):
         layers = [
@@ -156,10 +230,8 @@ def masks_from_json(json_path, output_dir):
         cv2.imwrite(os.path.join(output_dir, target_name), mask)
 
 def yolo_masks(sample_num, json_path, output_dir, tile_size=524, stride=256):
-    os.makedirs(os.path.join(output_dir, "images"), exist_ok=True)
-    os.makedirs(os.path.join(output_dir, "labels"), exist_ok=True)
 
-    with open(json_path, 'r') as f:
+    with open(json_path, "r") as f:
         data = json.load(f)
 
     for task in data:
@@ -172,11 +244,11 @@ def yolo_masks(sample_num, json_path, output_dir, tile_size=524, stride=256):
                 name = f"{sample_num}_y{y}_x{x}"
                 yolo_labels = []
 
-                if 'annotations' in task and task['annotations']:
-                    for ann in task['annotations'][0]['result']:
-                        if ann['type'] != 'polygonlabels': continue
+                if "annotations" in task and task["annotations"]:
+                    for ann in task["annotations"][0]["result"]:
+                        if ann["type"] != "polygonlabels": continue
                         
-                        points = np.array(ann['value']['points'])
+                        points = np.array(ann["value"]["points"])
                         points[:, 0] = points[:, 0] * w / 100.0
                         points[:, 1] = points[:, 1] * h / 100.0
 
@@ -198,5 +270,5 @@ def yolo_masks(sample_num, json_path, output_dir, tile_size=524, stride=256):
                             yolo_labels.append(f"{class_id} " + " ".join([f"{p:.6f}" for p in flat_pts]))
 
                 if yolo_labels:
-                    with open(os.path.join(output_dir, f"{name}.txt"), 'w') as f_out:
+                    with open(os.path.join(output_dir, f"{name}.txt"), "w") as f_out:
                         f_out.write("\n".join(yolo_labels))

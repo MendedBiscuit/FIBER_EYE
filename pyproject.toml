@@ -1,0 +1,19 @@
+[project]
+name = "fiber-eye"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "albumentations>=2.0.8",
+    "matplotlib>=3.10.8",
+    "mlflow>=3.8.1",
+    "numpy>=2.4.1",
+    "opencv-python>=4.13.0.90",
+    "pycocotools>=2.0.11",
+    "pytorch-lightning>=2.6.0",
+    "scikit-image>=0.26.0",
+    "segmentation-models-pytorch>=0.5.0",
+    "torch>=2.10.0",
+    "ultralytics>=8.4.6",
+]

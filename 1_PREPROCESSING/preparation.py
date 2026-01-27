@@ -11,8 +11,8 @@ from pycocotools.coco import COCO
 
 from PREPROCESS import Preprocessor, masks_from_json, yolo_masks
 
-TRAIN_THRESH = 8 / 18  # Portion of images used as training data
-VALID_THRESH = 10 / 18
+TRAIN_THRESH = 10 / 18  # Portion of images used as training data
+VALID_THRESH = 14 / 18
 
 # Get the .png version of each mask
 # masks_from_json(c.RAW_MASKS, c.PNG_MASKS)
@@ -45,7 +45,7 @@ for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
     mask = cv2.imread(os.path.join(c.PNG_MASKS, f"{sample}_M.png"))
 
     # Tile data, ensure train-val-pred split using threshold
-    if int(sample) <= int(TRAIN_THRESH * num_samples):
+    if int(sample) <= int(TRAIN_THRESH * num_samples): # Train
         processor.UNET_tile_and_save(
             sample,
             channel_array,
@@ -56,24 +56,25 @@ for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
             stride
             =c.STRIDE,
             )
-
-        yolo_masks(
-            sample, 
-            c.YOLO_MASKS, 
-            c.YOLO_TRAIN_MASK, 
-            tile_size=c.TILE_SIZE, 
-            stride=c.STRIDE
-            )
         
         processor.img_tile_and_save(
             sample, 
-            c.YOLO_TRAIN_IMG, 
+            c.YOLO_TRAIN_IMG,
+            mode="YOLO",
+            tile_size=c.TILE_SIZE, 
+            stride=c.STRIDE
+            )
+
+        processor.yolo_masks(
+            sample, 
+            c.YOLO_MASKS, 
+            c.YOLO_TRAIN_MASK,
             tile_size=c.TILE_SIZE, 
             stride=c.STRIDE
             )
 
 
-    elif int(TRAIN_THRESH * num_samples) < int(sample) <= int(VALID_THRESH * num_samples):
+    elif int(TRAIN_THRESH * num_samples) < int(sample) <= int(VALID_THRESH * num_samples): # Valid
         processor.UNET_tile_and_save(
             sample,
             channel_array,
@@ -82,40 +83,47 @@ for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
             c.VALID_MASK,
             tile_size=c.TILE_SIZE,
             stride=c.STRIDE,
-        )
-
-        yolo_masks(
-            sample, 
-            c.YOLO_MASKS, 
-            c.YOLO_TRAIN_MASK, 
-            tile_size=c.TILE_SIZE, 
-            stride=c.STRIDE
             )
         
         processor.img_tile_and_save(
             sample, 
-            c.YOLO_TRAIN_IMG, 
+            c.YOLO_VALID_IMG,
+            mode="YOLO",
             tile_size=c.TILE_SIZE, 
             stride=c.STRIDE
             )
     
-    else:
-        processor.UNET_tile_and_save(
-        sample,
-        channel_array,
-        None,
-        c.PREDICT_ARRAY,
-        "",
-        tile_size=c.TILE_SIZE,
-        stride=c.STRIDE,
-    )
+        processor.yolo_masks(
+            sample, 
+            c.YOLO_MASKS, 
+            c.YOLO_VALID_MASK,
+            tile_size=c.TILE_SIZE, 
+            stride=c.STRIDE
+            )
 
-        # Save tiled images for CV methods
+    else: # Predict
+        processor.UNET_tile_and_save(
+            sample,
+            channel_array,
+            None,
+            c.PREDICT_ARRAY,
+            None,
+            tile_size=c.TILE_SIZE,
+            stride=c.STRIDE,
+            )
+
         processor.img_tile_and_save(
             sample, 
-            c.IMG_PNG, 
+            c.YOLO_PREDICT_IMG,
+            mode="YOLO",
             tile_size=c.TILE_SIZE, 
             stride=c.STRIDE
             )
-
-    
+        
+        processor.yolo_masks(
+            sample, 
+            c.YOLO_MASKS, 
+            c.YOLO_PREDICT_MASK,
+            tile_size=c.TILE_SIZE, 
+            stride=c.STRIDE
+            )
