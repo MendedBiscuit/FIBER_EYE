@@ -67,7 +67,7 @@ paths:
     yolo:
 
       base_model: "./2_PROCESSING/YOLO/models/yolo26m-seg.pt"
-      model: "./runs/detect/train/weights/best.pt"
+      model: "./runs/segment/train5/weights/best.pt"
 
       output: "./3_POSTPROCESSING/OUT_YOLO/"
 

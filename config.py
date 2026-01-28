@@ -35,8 +35,8 @@ YOLO_MASKS = get_path("paths", "preprocessing", "yolo_mask")
 # models
 UNET_MODEL = get_path("paths", "processing", "unet", "model")
 RF_MODEL = get_path("paths", "processing", "rf", "model")
-BASE_YOLO_MODEL = get_path("paths", "processing", "yolo", "model")
-YOLO_MODEL = get_path("paths", "processing", "yolo", "base_model")
+YOLO_MODEL = get_path("paths", "processing", "yolo", "model")
+BASE_YOLO_MODEL = get_path("paths", "processing", "yolo", "base_model")
 
 # output
 CV_OUT = get_path("paths", "processing", "classic_cv", "output")

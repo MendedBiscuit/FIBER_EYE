@@ -1,13 +1,14 @@
 import os
 import re
 import torch
+import cv2
 
 import numpy as np
 
 from ultralytics import YOLO
 
 
-class InstancePredictor:
+class Predictor:
     def __init__(self, checkpoint_path):
         self.model = YOLO(checkpoint_path)
 
@@ -29,7 +30,7 @@ class InstancePredictor:
                 })
         return tile_instances
 
-    def stitch_to_instance_map(self, directory_path, sample_tiles, tile_size=512):
+    def stitch_tiles(self, directory_path, sample_tiles, tile_size=512, stride=256):
         all_chips = []
         
         for f in sample_tiles:
@@ -49,7 +50,8 @@ class InstancePredictor:
             unique_id = idx + 1
             cv2.fillPoly(instance_mask, [chip["polygon"]], unique_id)
 
-        return instance_mask, all_chips
+        # return instance_mask, all_chips
+        return instance_mask
 
     def visualize_instances(self, instance_mask):
         max_id = np.max(instance_mask)

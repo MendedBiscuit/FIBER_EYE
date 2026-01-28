@@ -27,6 +27,8 @@ predict_image = Predictor(c.YOLO_MODEL)
 for sample, images in sorted(grouped_list, key=lambda x: int(x[0])):
     prediction = predict_image.stitch_tiles(
         c.YOLO_PREDICT_IMG, images, tile_size=c.TILE_SIZE, stride=c.STRIDE
-    )
+        )
 
-    cv2.imwrite(os.path.join(c.YOLO_OUT, f"{sample}_P_YOLO.png"), prediction * 255)
+    final = predict_image.visualize_instances(prediction)
+    
+    cv2.imwrite(os.path.join(c.YOLO_OUT, f"{sample}_P_YOLO.png"), final * 255)

@@ -1,0 +1,5 @@
+names:
+  0: bg
+  1: WoodChip
+train: c:\Users\julia\FIBER_EYE\2_PROCESSING\_DATA\TRAIN\YOLO\images
+val: c:\Users\julia\FIBER_EYE\2_PROCESSING\_DATA\VALID\YOLO\images
